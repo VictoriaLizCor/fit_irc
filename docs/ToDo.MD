@@ -1,5 +1,5 @@
 # Vitoria's List
-* create main repository
+* create project tree
 * setup rules to work with branches
 * create subfolder or brach make file 
 * change git message to include current @git user
