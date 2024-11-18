@@ -1,7 +1,18 @@
 <!--
 Use VScode viewer with ctrl+shift+v
 -->
+# Check git config
+    ```sh
+    git config --global --list
+    ```
+# Creating Sparse checkout
+    ```sh
+	#check if it is enable
+    git config core.sparseCheckout
+    ```
 
+
+# Handling team Merge issues
 To control branches and avoid merge problems in a team project, follow these best practices:
 
 1. **Use Feature Branches**: Create a new branch for each feature or bug fix. This keeps the main branch clean and stable.

@@ -405,7 +405,7 @@ define CPP_CONTENT
 {{CLASS_NAME}}::{{CLASS_NAME}}({{CLASS_NAME}} const& rhs)
 {
 
-}
+}sparse-checkout
 
 {{CLASS_NAME}}::~{{CLASS_NAME}}(void)
 {
