@@ -1,4 +1,4 @@
-#include gitTools/Makefile
+include .settings/Makefile
 #------ TARGET ------#
 NAME		:= ircserv
 #------ WFLAGS ------#
@@ -11,7 +11,7 @@ SRC			:= $(shell find $(SRC_DIR) -name '*.cpp' ! -name 'main.cpp')
 MAIN		:= $(shell find $(SRC_DIR) -name 'main.cpp')
 SRC			+= $(MAIN)
 PROJECT_ROOT:= $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/)
-GIT_REPO	:=$(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../..)
+GIT_REPO	:=$(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 DIRS		:= $(abspath $(dir $(shell find $(PROJECT_ROOT) -name Makefile | sort)))
 CURRENT		:= $(shell basename $$PWD)
 DEBUG_PATH	:= debug
@@ -254,14 +254,13 @@ cpp: # Usage: make cpp h=filename
 	@echo "Recently Created/Modified files:"; find . -type f \( -name "*.cpp" -o -name "*.hpp" \) -mmin -5 | sort -r
 content:
 	@find . -type f \( -name "*.cpp" -o -name "*.hpp" \) | sort
-# this rule will include
+
 # Usage: make main
 main:
 	@if [ ! -f "src/main.cpp" ]; then \
 		printf "$${MAIN_CONTENT}" > src/main.cpp; \
 		echo "src/main.cpp was created"; \
 	fi
-#	find . -type f \( -name "*.hpp" ! -name "Utils.hpp" \) -exec basename {} \;
 
 #--------------------COLORS----------------------------#
 # For print

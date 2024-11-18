@@ -11,6 +11,134 @@ Use VScode viewer with ctrl+shift+v
     git config core.sparseCheckout
     ```
 
+To achieve this, you can create a Git hook that will configure sparse-checkout for other users to exclude the submodule directory. However, Git hooks are not shared with the remote repository by default. They are local to each user's repository. You can include the hook script in your repository and instruct your team members to set it up locally.
+
+### Step-by-Step Guide
+
+1. **Create the main repository**: Initialize your main repository and add your files.
+
+2. **Add the submodule**: Add the submodule to your repository.
+
+3. **Create the hook script**: Create a script for the post-checkout hook and include it in your repository.
+
+4. **Instruct team members to set up the hook**: Provide instructions for your team members to set up the hook locally.
+
+### Detailed Steps
+
+1. **Create the main repository**:
+
+```sh
+# Navigate to your desired directory
+cd /path/to/your/main/repository
+
+# Initialize the main repository
+git init
+
+# Add your files and commit
+git add .
+git commit -m "Initial commit"
+
+# Add the remote repository
+git remote add origin <remote-repository-url>
+```
+
+2. **Add the submodule**:
+
+```sh
+# Add the submodule
+git submodule add <submodule-repository-url> submodule_directory
+
+# Initialize the submodule
+git submodule init
+
+# Update the submodule
+git submodule update
+
+# Commit the changes
+git add .
+git commit -m "Add submodule"
+```
+
+3. **Create the hook script**:
+
+Create a script for the post-checkout hook and include it in your repository. For example, create a file named `setup-hooks.sh`:
+
+```sh
+# Create the setup-hooks.sh script
+touch setup-hooks.sh
+
+# Make the script executable
+chmod +x setup-hooks.sh
+
+# Edit the script
+nano setup-hooks.sh
+```
+
+Add the following content to `setup-hooks.sh`:
+
+```sh
+#!/bin/sh
+
+# Create the post-checkout hook
+cat << 'EOF' > .git/hooks/post-checkout
+#!/bin/sh
+
+# Check if the current user is the specific user
+if [ "$(whoami)" != "your_username" ]; then
+  # Enable sparse-checkout
+  git config core.sparseCheckout true
+
+  # Create the sparse-checkout file
+  echo "/*" > .git/info/sparse-checkout
+  echo "!submodule_directory" >> .git/info/sparse-checkout
+
+  # Update the working directory to match the sparse-checkout file
+  git read-tree -mu HEAD
+fi
+EOF
+
+# Make the post-checkout hook executable
+chmod +x .git/hooks/post-checkout
+```
+
+Replace `your_username` with your actual username and `submodule_directory` with the directory name of your submodule.
+
+4. **Commit and push the hook script**:
+
+```sh
+# Add the setup-hooks.sh script to the repository
+git add setup-hooks.sh
+git commit -m "Add setup-hooks.sh script"
+git push origin main
+```
+
+5. **Instruct team members to set up the hook**:
+
+Provide instructions for your team members to set up the hook locally. For example, you can include the following instructions in your `README.md` or another documentation file:
+
+```markdown
+# Setting Up Git Hooks
+
+To configure the repository to exclude the submodule directory, run the following script:
+
+```sh
+./setup-hooks.sh
+```
+
+This will set up the necessary Git hooks to configure sparse-checkout for your local repository.
+```
+
+### Explanation
+
+1. **Create the main repository**: Initialize your main repository and add your files.
+
+2. **Add the submodule**: Add the submodule to your repository and commit the changes.
+
+3. **Create the hook script**: Create a script for the post-checkout hook and include it in your repository. This script will configure sparse-checkout for other users to exclude the submodule directory.
+
+4. **Instruct team members to set up the hook**: Provide instructions for your team members to set up the hook locally. They need to run the `setup-hooks.sh` script to configure the post-checkout hook in their local repository.
+
+By following these steps, you will have a submodule in the repository that only you will be able to pull from the main branch. Other users won't see the submodule in their local repository due to the post-checkout hook configuration.
 
 # Handling team Merge issues
 To control branches and avoid merge problems in a team project, follow these best practices:
