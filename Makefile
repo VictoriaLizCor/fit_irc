@@ -38,7 +38,6 @@ OBJS := $(addprefix $(BUILD_DIR), $(notdir $(SRC:%.cpp=%.o)))
 # prerequisites. 
 vpath %.cpp $(sort $(dir $(SRC)))
 DEPS		:= $(OBJS:.o=.d)
-#DEPENDENCIES := $(shell find $(BUILD_DIR) -name '*.d')
 -include $(DEPS) # to include in compilation
 D_FLAGS		+= -O0 -g3 #-Og optimization + good debuggin experience
 # ASAN_OPTIONS=detect_leaks=1 # in case platform leaks detections is not enable
@@ -188,32 +187,32 @@ cleanAll:
 	@for dir in $(DIRS); do \
 		$(MAKE) -C $$dir fclean; \
 	done
-gAdd:
-	@echo $(CYAN) && git add $(PROJECT_ROOT)
-gCommit:
-	@echo $(GREEN) && git commit -e ; \
-	ret=$$?; \
-	if [ $$ret -ne 0 ]; then \
-		echo $(RED) "Error in commit message"; \
-		exit 1; \
-	fi
-gPush:
-	@echo $(YELLOW) && git push ; \
-	ret=$$? ; \
-	if [ $$ret -ne 0 ]; then \
-		echo $(RED) "git push failed, setting upstream branch" $(YELLOW) && \
-		git push --set-upstream origin $(shell git branch --show-current) || \
-		if [ $$? -ne 0 ]; then \
-			echo $(RED) "git push --set-upstream failed with error" $(E_NC); \
-			exit 1; \
-		fi \
-	fi
-git: fclean
-	@if [ -f "$(GIT_REPO)/Makefile" ] && [ -d "$(GIT_REPO)/.git" ]; then \
-		$(MAKE) -C "$(GIT_REPO)" git; \
-	else \
-		$(MAKE) -C "$(PROJECT_ROOT)" cleanAll gAdd gCommit gPush; \
-	fi
+# gAdd:
+# 	@echo $(CYAN) && git add $(PROJECT_ROOT)
+# gCommit:
+# 	@echo $(GREEN) && git commit -e ; \
+# 	ret=$$?; \
+# 	if [ $$ret -ne 0 ]; then \
+# 		echo $(RED) "Error in commit message"; \
+# 		exit 1; \
+# 	fi
+# gPush:
+# 	@echo $(YELLOW) && git push ; \
+# 	ret=$$? ; \
+# 	if [ $$ret -ne 0 ]; then \
+# 		echo $(RED) "git push failed, setting upstream branch" $(YELLOW) && \
+# 		git push --set-upstream origin $(shell git branch --show-current) || \
+# 		if [ $$? -ne 0 ]; then \
+# 			echo $(RED) "git push --set-upstream failed with error" $(E_NC); \
+# 			exit 1; \
+# 		fi \
+# 	fi
+# git: fclean
+# 	@if [ -f "$(GIT_REPO)/Makefile" ] && [ -d "$(GIT_REPO)/.git" ]; then \
+# 		$(MAKE) -C "$(GIT_REPO)" git; \
+# 	else \
+# 		$(MAKE) -C "$(PROJECT_ROOT)" cleanAll gAdd gCommit gPush; \
+# 	fi
 quick: cleanAll
 	@echo $(GREEN) && git commit -am "* Update in files: "; \
 	ret=$$? ; \

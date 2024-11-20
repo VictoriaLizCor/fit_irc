@@ -5,7 +5,9 @@
 # include <sstream>
 # include <string>
 # include <typeinfo>
-# include <Utils.hpp>
+# include <Utils/Utils.hpp>
+// # include <cliente/server.hpp>
+// # include <server/server.hpp>
 
 # ifndef DEBUG
 #  define DEBUG 0
@@ -24,6 +26,6 @@ class Server
 		~Server();
 };
 
-// std::ostream& operator << (std::ostream& os, Server& rhs);
+// // std::ostream& operator << (std::ostream& os, Server& rhs);
 
-#endif // SERVER_HPP
+ #endif // SERVER_HPP
