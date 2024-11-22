@@ -52,7 +52,6 @@
 		//"**/CPP_08": true
 	},
 	"github.copilot.editor.enableAutoCompletions": false,
-	"window.newWindowDimensions": "inherit",
 	"pdf-preview.default.sidebar": false,
 	"files.associations": {
 		"array": "cpp",
@@ -121,5 +120,7 @@
 		"semaphore": "cpp",
 		"*.tpp": "cpp"
 	},
-	"window.restoreWindows": "none",
+	//"window.restoreWindows": "none",
+	"window.newWindowDimensions": "inherit",
+	//"window.restoreWindows": "preserve"
 }
