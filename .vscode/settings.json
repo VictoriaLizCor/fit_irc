@@ -121,4 +121,5 @@
 		"semaphore": "cpp",
 		"*.tpp": "cpp"
 	},
+	"window.restoreWindows": "none",
 }
