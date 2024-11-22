@@ -1,6 +1,8 @@
 ifneq ($(shell test -d .settings && echo yes),)
 include .settings/Makefile
 endif
+#git submodule foreach 'cd $(git rev-parse --show-toplevel) && echo $(pwd)/$sm_path/.git/hooks' | tail -n 1
+
 #------ TARGET ------#
 NAME		:= ircserv
 #------ WFLAGS ------#
