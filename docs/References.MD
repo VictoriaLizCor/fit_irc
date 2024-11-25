@@ -1,3 +1,6 @@
+
+[Catalog desing patterns](https://refactoring.guru/design-patterns/catalog)
+
 https://copyconstruct.medium.com/the-method-to-epolls-madness-d9d2d6378642
 
 https://modern.ircdocs.horse/
