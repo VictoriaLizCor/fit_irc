@@ -125,8 +125,10 @@ To configure the repository to exclude the submodule directory, run the followin
 ./setup-hooks.sh
 ```
 
+# SET GIT HOOKS
+
 This will set up the necessary Git hooks to configure sparse-checkout for your local repository.
-```
+
 
 ### Explanation
 
@@ -220,6 +222,30 @@ To control branches and avoid merge problems in a team project, follow these bes
 9. **Communicate**: Keep open communication with your team about the changes you are making and any potential conflicts.
 
 By following these practices, you can minimize merge problems and maintain a smooth workflow in your team project.
+
+# Track folders locally but ignore when merge or push are used
+To keep some folders locally but ignore them when pushing to the remote repository or merging to the main branch, you can use the following approach:
+
+1. Add the folders to your `.gitignore` file to ensure they are not tracked by Git.
+2. Use the `git update-index --assume-unchanged` command to mark the files or folders as unchanged.
+
+Here are the steps:
+
+1. Add the folders to your `.gitignore` file:
+
+```
+.vscode/
+VictoriaTests/
+```
+
+2. Mark the folders as unchanged:
+
+```sh
+git update-index --assume-unchanged .vscode/
+git update-index --assume-unchanged VictoriaTests/
+```
+
+This will ensure that these folders are ignored by Git and not included in any pushes or merges. They will remain in your local repository but will not be tracked or pushed to the remote repository.
 
 ## Pulling a Non-Existent Remote Branch Locally
 

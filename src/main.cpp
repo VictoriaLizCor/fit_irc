@@ -2,8 +2,9 @@
 #include "Client.hpp"
 #include "Server.hpp"
 
-int main(void)
+int main()
 {
-	std::cout << "TEST" << std::endl;
+	Server server(6667);
+	server.run();
 	return (0);
 }

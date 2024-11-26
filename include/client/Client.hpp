@@ -1,27 +1,25 @@
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
 
-# include <iostream>
-# include <sstream>
+# include <pthread.h>
 # include <string>
-# include <typeinfo>
 # include <Utils.hpp>
 
 # ifndef DEBUG
 #  define DEBUG 0
 # endif
 
-class Client
+class Client 
 {
-	private:
-
-	protected:
-		
 	public:
-		Client();
-		// Client& operator=(Client const& rhs);
-		// Client(Client const& rhs);
-		~Client();
+		int fd;
+		std::string nickname;
+		std::string username;
+		std::string buffer;
+		pthread_t thread;
+
+		Client(int fd);
+		void sendMessage(const std::string &message);
 };
 
 // std::ostream& operator << (std::ostream& os, Client& rhs);
