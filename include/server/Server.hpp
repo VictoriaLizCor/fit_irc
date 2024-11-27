@@ -42,7 +42,7 @@ class Server
 
 	public:
 		Server(int& port, std::string const& password);
-		static void signalHandler(int signum); // does it need to be static?
+		static void signalHandler(int signum); // does it need to be static ?
 		~Server();
 		void run();
 
@@ -72,6 +72,30 @@ class ClientHandler
 		}
 };
 
+/**
+ * @class SockAddressInitializer
+ * @brief A class to initialize and store a sockaddr_in structure.
+ *
+ * This class provides a convenient way to initialize a sockaddr_in structure
+ * with a specified port and the loopback address (127.0.0.1).
+ */
+
+/**
+ * @brief Constructor to initialize the sockaddr_in structure.
+ * 
+ * This constructor initializes the sockaddr_in structure with the specified
+ * port number and sets the address to the loopback address (127.0.0.1).
+ * 
+ * @param port The port number to be set in the sockaddr_in structure.
+ */
+
+/**
+ * @brief Get the initialized sockaddr_in structure.
+ * 
+ * This function returns the initialized sockaddr_in structure.
+ * 
+ * @return The initialized sockaddr_in structure.
+ */
 class SockAddressInitializer
 {
 	public:

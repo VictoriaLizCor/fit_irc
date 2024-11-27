@@ -161,7 +161,7 @@ test: $(NAME)
 		else \
 			echo $(E_NC); ./$(NAME) $(i); \
 		fi; \
-	fi;
+	fi
 run:$(NAME)
 	@range=0; \
 	if [ -z "$(i)" ]; then \
