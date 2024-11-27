@@ -14,7 +14,7 @@
 class Command
 {
 	public:
-		static void handleCommand(const std::string &command, Client *client, std::map<std::string, Channel> &channels);
+		static void handleCommand(const std::string &command, Client *client, std::map<std::string, Channel*> &channels);
 };
 
 

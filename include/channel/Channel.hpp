@@ -1,15 +1,14 @@
 #ifndef CHANNEL_HPP
 # define CHANNEL_HPP
 
-#include <string>
-#include <vector>
-#include <pthread.h>
-#include "Client.hpp"
+# include <string>
+# include <vector>
+# include <pthread.h>
+# include "Client.hpp"
 
 # ifndef DEBUG
 #  define DEBUG 0
 # endif
-
 
 class Channel
 {
@@ -18,12 +17,30 @@ class Channel
 		std::vector<Client*> members;
 		pthread_mutex_t mutex;
 
-		Channel(const std::string &name);
+		Channel(std::string const& name);
 		~Channel();
 		void addMember(Client *client);
 		void removeMember(Client *client);
-		void broadcast(const std::string &message, Client *exclude = NULL);
+		void broadcast(std::string const &message, Client *exclude = NULL);
 };
 
+class SendMessageFunctor
+{
+	private:
+		Client* exclude;
+		std::string message;
 
+	public:
+		SendMessageFunctor(Client* exclude, const std::string& message)
+			: exclude(exclude), message(message) {}
+
+		void operator()(Client* client) const
+		{
+			if (client != exclude)
+			{
+				client->sendMessage(message);
+			}
+    }
+};
 #endif // CHANNEL_HPP
+

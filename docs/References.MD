@@ -141,3 +141,22 @@ These are just a few examples of what you can do with `netcat`. It is a powerful
 ```sh
 man nc
 ```
+
+
+# Server documentation
+
+## [Hybrid approach] Threads and poll
+Using threads can be a good approach for handling multiple client connections, especially if you want to take advantage of multi-core processors and keep the server responsive. However, it comes with its own set of challenges, such as synchronization and potential race conditions. Here are some pros and cons of using threads:
+
+### Pros:
+1. **Concurrency**: Threads allow you to handle multiple clients concurrently, making better use of multi-core processors.
+2. **Simplicity**: Each thread can handle a single client, simplifying the logic for handling client communication.
+3. **Responsiveness**: The server can remain responsive to new connections while handling existing ones.
+
+### Cons:
+1. **Synchronization**: Shared resources need to be protected with mutexes or other synchronization mechanisms, which can introduce complexity.
+2. **Overhead**: Creating and managing threads can introduce overhead, especially if there are many short-lived connections.
+3. **Scalability**: With a large number of clients, the overhead of managing many threads can become significant.
+
+### Hybrid Approach:
+A hybrid approach can combine the benefits of both threading and non-blocking I/O. For example, you can use a thread pool to handle client connections while using non-blocking I/O to manage the connections within each thread.

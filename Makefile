@@ -14,7 +14,6 @@ SRC			:= $(shell find $(SRC_DIR) -name '*.cpp' ! -name 'main.cpp')
 MAIN		:= $(shell find $(SRC_DIR) -name 'main.cpp')
 SRC			+= $(MAIN)
 PROJECT_ROOT:= $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/)
-GIT_REPO	:=$(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 DIRS		:= $(abspath $(dir $(shell find $(PROJECT_ROOT) -name Makefile | sort)))
 CURRENT		:= $(shell basename $$PWD)
 DEBUG_PATH	:= debug
@@ -70,6 +69,7 @@ D_FLAGS		+= -ftime-report
 else
 VERBOSE =
 endif
+
 #-------------------- RULES ----------------------------#
 all:$(NAME)
 
@@ -138,6 +138,18 @@ check:
 	ret=$$? ; \
 	if [ $$ret = 0 ]; then \
 		echo  $(f) [$(GREEN) OK $(E_NC)]; \
+	fi
+
+t1: $(NAME)
+	@echo $(BOLD) $(CYAN) ./$(NAME) 6667 1234 "$(i)" $(E_NC) "\n"; \
+	if [ "$(S)" = "0" ]; then \
+		echo $(E_NC); $(MAKE) -C . val; \
+	else \
+		if [ -z "$(i)" ]; then \
+			echo $(E_NC); ./$(NAME) 6667 1234 ; \
+		else \
+			echo $(E_NC); ./$(NAME) $(i); \
+		fi; \
 	fi
 test: $(NAME)
 	@echo $(BOLD) $(CYAN) ./$(NAME) "$(i)" $(E_NC) "\n"; \

@@ -28,12 +28,6 @@ void Channel::removeMember(Client *client)
 void Channel::broadcast(const std::string &message, Client *exclude)
 {
 	pthread_mutex_lock(&mutex);
-	for (std::vector<Client*>::iterator it = members.begin(); it != members.end(); ++it)
-	{
-		if (*it != exclude)
-		{
-			(*it)->sendMessage(message);
-		}
-	}
+	std::for_each(members.begin(), members.end(), SendMessageFunctor(exclude, message));
 	pthread_mutex_unlock(&mutex);
 }

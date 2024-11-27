@@ -2,7 +2,7 @@
 #include <sstream>
 #include <iostream>
 
-void Command::handleCommand(const std::string &command, Client *client, std::map<std::string, Channel> &channels)
+void Command::handleCommand(const std::string &command, Client *client, std::map<std::string, Channel*> &channels)
 {
 	std::istringstream iss(command);
 	std::string cmd;
@@ -22,10 +22,10 @@ void Command::handleCommand(const std::string &command, Client *client, std::map
 		iss >> channelName;
 		if (channels.find(channelName) == channels.end())
 		{
-			channels[channelName] = Channel(channelName);
+			channels.insert(std::make_pair(channelName, new Channel(channelName)));
 		}
-		channels[channelName].addMember(client);
-		channels[channelName].broadcast(client->nickname + " has joined the channel.\n", client);
+		channels[channelName]->addMember(client);
+		channels[channelName]->broadcast(client->nickname + " has joined the channel.\n", client);
 	}
 	else if (cmd == "PRIVMSG")
 	{
@@ -34,7 +34,7 @@ void Command::handleCommand(const std::string &command, Client *client, std::map
 		std::getline(iss, message);
 		if (channels.find(target) != channels.end())
 		{
-			channels[target].broadcast(client->nickname + ": " + message + "\n", client);
+			channels[target]->broadcast(client->nickname + ": " + message + "\n", client);
 		}
 	}
 }

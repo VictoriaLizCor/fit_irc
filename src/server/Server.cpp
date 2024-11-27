@@ -1,146 +1,262 @@
 #include "Server.hpp"
 #include "Command.hpp"
+#include "Client.hpp"
+#include "Channel.hpp"
 #include <iostream>
-#include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
-#include <netinet/in.h>
-#include <algorithm>
-#include <cerrno>  // For errno
-#include <cstring> // For strerror
-#include <cstdio>  // For perror
+#include <cerrno>
+#include <cstdio>
+#include <sys/socket.h>
+#include <arpa/inet.h>  // inet_ntoa
+#include <netdb.h>
+#include <utility>
+#include <stdexcept>
+#include <csignal>
+#include <fstream>
 
-Server::Server(int port)
+Server::Server(int& port, const std::string& password) : password(password)
 {
-	server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (server_fd < 0)
+	try
 	{
-		perror("socket");
+		serverFD = socket(AF_INET, SOCK_STREAM, 0);
+		if (serverFD <= 0)
+		{
+			throw std::runtime_error("Can't create socket");
+		}
+		/**
+		 class stores the port and password and uses them during
+		 initialization and operation. The welcome message is
+		 displayed when the server starts listening on the specified
+		 IP address and port. The `SO_REUSEADDR` option is used to
+		 allow the server to bind to the port even if it is in the
+		 `TIME_WAIT` state. Additionally, signal handlers are set up
+		 to handle interruptions and close the server socket
+		 gracefully.
+		 * 
+		 */
+		int opt = 1;
+		if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+		{
+			throw std::runtime_error("setsockopt(SO_REUSEADDR) failed");
+		}
+
+		SockAddressInitializer initializer(port);
+		struct sockaddr_in serverAddress = initializer.getAddress();
+
+		if (bind(serverFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1)
+		{
+			throw std::runtime_error("Can't bind to IP/port");
+		}
+
+		if (listen(serverFD, SOMAXCONN) == -1)
+		{
+			throw std::runtime_error("Can't listen");
+		}
+		
+		char ip[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &serverAddress.sin_addr, ip, INET_ADDRSTRLEN);
+		std::cout << "Server listening on " << ip << ":" << port << "\n";
+
+		setNonBlocking(serverFD);
+
+		struct pollfd serverP_FDs = {serverFD, POLLIN, 0};
+		pollFDs.push_back(serverP_FDs);
+
+		pthread_mutex_init(&clientsMutex, NULL);
+		pthread_mutex_init(&channelsMutex, NULL);
+		setupSignalHandlers();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Error initializing server: " << e.what() << std::endl;
 		exit(1);
 	}
-
-	setNonBlocking(server_fd);
-
-	struct sockaddr_in server_addr;
-	memset(&server_addr, 0, sizeof(server_addr));
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = INADDR_ANY;
-	server_addr.sin_port = htons(port);
-
-	if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
-	{
-		perror("bind");
-		close(server_fd);
-		exit(1);
-	}
-
-	if (listen(server_fd, 100) < 0)
-	{
-		perror("listen");
-		close(server_fd);
-		exit(1);
-	}
-
-	struct pollfd server_pfd =
-	{server_fd, POLLIN, 0};
-	poll_fds.push_back(server_pfd);
-
-	pthread_mutex_init(&clients_mutex, NULL);
-	pthread_mutex_init(&channels_mutex, NULL);
 }
 
 Server::~Server()
 {
-	pthread_mutex_destroy(&clients_mutex);
-	pthread_mutex_destroy(&channels_mutex);
-	close(server_fd);
+	pthread_mutex_destroy(&clientsMutex);
+	pthread_mutex_destroy(&channelsMutex);
+	close(serverFD);
+
+	for (ClientsIte it = clients.begin(); it != clients.end(); ++it)
+	{
+		delete it->second;
+	}
+
+	for (ChannelIte it = channels.begin(); it != channels.end(); ++it)
+	{
+		delete it->second;
+	}
+	removeLockFile();
 }
 
 void Server::setNonBlocking(int fd)
 {
-	fcntl(fd, F_SETFL, O_NONBLOCK);
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+	{
+		throw std::runtime_error("Failed to get file descriptor flags: " + std::string(strerror(errno)));
+	}
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+	{
+		throw std::runtime_error("Failed to set non-blocking mode: " + std::string(strerror(errno)));
+	}
 }
 
 void Server::handleNewConnection()
 {
-	struct sockaddr_in client_addr;
-	socklen_t client_len = sizeof(client_addr);
-	int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
-	if (client_fd < 0)
+	try
 	{
-		perror("accept");
-		return;
+		struct sockaddr_in clientAddress;
+		socklen_t clientLength = sizeof(clientAddress);
+		int clientFD = accept(serverFD, (struct sockaddr*)&clientAddress, &clientLength);
+		if (clientFD < 0)
+		{
+			throw std::runtime_error("Failed to accept new connection: " + std::string(strerror(errno)));
+		}
+		setNonBlocking(clientFD);
+		struct pollfd pfd = {clientFD, POLLIN, 0};
+		pollFDs.push_back(pfd);
+
+		pthread_mutex_lock(&clientsMutex);
+		clients.insert(std::make_pair(clientFD, new Client(clientFD)));
+		pthread_mutex_unlock(&clientsMutex);
+
+		std::cout << "New client connected: " << clientFD << std::endl;
+
+		ClientHandler* handler = new ClientHandler(this, clientFD);
+		pthread_t thread;
+		pthread_create(&thread, NULL, ClientHandler::start, handler);
+		pthread_detach(thread);
 	}
-	setNonBlocking(client_fd);
-	struct pollfd pfd = {client_fd, POLLIN, 0};
-	poll_fds.push_back(pfd);
-
-	pthread_mutex_lock(&clients_mutex);
-	clients[client_fd] = Client(client_fd);
-	pthread_mutex_unlock(&clients_mutex);
-
-	std::cout << "New client connected: " << client_fd << std::endl;
-
-	pthread_create(&clients[client_fd].thread, NULL, handleClient, &clients[client_fd]);
+	catch (const std::exception& e)
+	{
+		std::cerr << "Error handling new connection: " << e.what() << std::endl;
+	}
 }
 
-void* Server::handleClient(void* arg)
+void Server::handleClient(int clientFD)
 {
-	Client* client = static_cast<Client*>(arg);
-	char buffer[512];
+	char buffer[MAX_BUFFER];
 	while (true)
 	{
-		int nbytes = read(client->fd, buffer, sizeof(buffer) - 1);
-		if (nbytes <= 0)
+		try
 		{
-			if (nbytes < 0) perror("read");
-			close(client->fd);
+			int nbytes = recv(clientFD, buffer, sizeof(buffer) - 1, 0);
+			if (nbytes < 0)
+			{
+				if (errno == EAGAIN || errno == EWOULDBLOCK)
+				{
+					continue; // No data available, continue the loop
+				}
+				else
+				{
+					perror("recv");
+					close(clientFD);
 
-			pthread_mutex_lock(&this->clients_mutex);
-			clients.erase(client->fd);
-			pthread_mutex_unlock(&clients_mutex);
+					pthread_mutex_lock(&clientsMutex);
+					delete clients[clientFD];
+					clients.erase(clientFD);
+					pthread_mutex_unlock(&clientsMutex);
 
+					break;
+				}
+			}
+			else if (nbytes == 0)
+			{
+				close(clientFD);
+
+				pthread_mutex_lock(&clientsMutex);
+				delete clients[clientFD];
+				clients.erase(clientFD);
+				pthread_mutex_unlock(&clientsMutex);
+
+				break;
+			}
+			buffer[nbytes] = '\0';
+
+			pthread_mutex_lock(&clientsMutex);
+			ClientsIte it = clients.find(clientFD);
+			if (it != clients.end())
+			{
+				it->second->buffer += buffer;
+
+				// Process commands
+				size_t pos;
+				while ((pos = it->second->buffer.find("\r\n")) != std::string::npos)
+				{
+					std::string command = it->second->buffer.substr(0, pos);
+					it->second->buffer.erase(0, pos + 2);
+					std::cout << "Received command from " << clientFD << ": " << command << std::endl;
+
+					pthread_mutex_lock(&channelsMutex);
+					Command::handleCommand(command, it->second, channels);
+					pthread_mutex_unlock(&channelsMutex);
+				}
+			}
+			pthread_mutex_unlock(&clientsMutex);
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Error handling client: " << e.what() << std::endl;
 			break;
 		}
-		buffer[nbytes] = '\0';
-		client->buffer += buffer;
-
-		// Process commands
-		size_t pos;
-		while ((pos = client->buffer.find("\r\n")) != std::string::npos)
-		{
-			std::string command = client->buffer.substr(0, pos);
-			client->buffer.erase(0, pos + 2);
-			std::cout << "Received command from " << client->fd << ": " << command << std::endl;
-
-			pthread_mutex_lock(&channels_mutex);
-			Commands::handleCommand(command, client, channels);
-			pthread_mutex_unlock(&channels_mutex);
-		}
 	}
-	return NULL;
 }
 
 void Server::run()
 {
 	while (true)
 	{
-		int poll_count = poll(&poll_fds[0], poll_fds.size(), -1);
-		if (poll_count < 0)
+		try
 		{
-			perror("poll");
-			break;
-		}
-
-		for (size_t i = 0; i < poll_fds.size(); ++i)
-		{
-			if (poll_fds[i].revents & POLLIN)
+			int poll_count = poll(&pollFDs[0], pollFDs.size(), -1);
+			if (poll_count < 0)
 			{
-				if (poll_fds[i].fd == server_fd)
+				throw std::runtime_error("Poll failed: " + std::string(strerror(errno)));
+			}
+
+			for (size_t i = 0; i < pollFDs.size(); ++i)
+			{
+				if (pollFDs[i].revents & POLLIN)
 				{
-					handleNewConnection();
+					if (pollFDs[i].fd == serverFD)
+						handleNewConnection();
 				}
 			}
 		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Error in server run loop: " << e.what() << std::endl;
+		}
 	}
+}
+
+void Server::setupSignalHandlers()
+{
+	signal(SIGINT, Server::signalHandler);
+	signal(SIGTERM, Server::signalHandler);
+}
+
+void Server::signalHandler(int signum)
+{
+	std::cout << "Interrupt signal (" << signum << ") received. Closing server socket." << std::endl;
+	exit(signum);
+}
+
+void Server::createLockFile()
+{
+	std::ofstream lockFile(lockFilePath.c_str());
+	if (!lockFile)
+	{
+		throw std::runtime_error("Unable to create lock file");
+	}
+	lockFile.close();
+}
+
+void Server::removeLockFile()
+{
+	std::remove(lockFilePath.c_str());
 }
