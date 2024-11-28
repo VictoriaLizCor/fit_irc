@@ -11,6 +11,7 @@
 # include <cstring>
 
 #define MAX_BUFFER 4096
+
 class Client;
 class Channel;
 
@@ -24,7 +25,7 @@ class Server
 		int serverFD;
 		std::vector<struct pollfd> pollFDs;
 		std::map<int, Client*> clients;
-		std::map<std::string, Channel *> channels;
+		std::map<std::string, Channel*> channels;
 		pthread_mutex_t clientsMutex;
 		pthread_mutex_t channelsMutex;
 		std::string const password;
