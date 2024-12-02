@@ -118,7 +118,8 @@
 		"stop_token": "cpp",
 		"thread": "cpp",
 		"semaphore": "cpp",
-		"*.tpp": "cpp"
+		"*.tpp": "cpp",
+		"csignal": "cpp"
 	},
 	//"window.restoreWindows": "none",
 	"window.newWindowDimensions": "inherit",
