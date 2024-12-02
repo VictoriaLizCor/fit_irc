@@ -8,8 +8,9 @@
 # include <netinet/in.h>
 # include <arpa/inet.h> 
 # include <string>
-#include <cerrno>
-#include <cstring> // strerror
+# include <iostream>
+# include <cerrno>
+# include <cstring> // strerror
 
 
 # ifndef DEBUG
@@ -34,6 +35,7 @@ class Server
 		pthread_mutex_t channelsMutex;
 		std::string const password;
 		std::string const lockFilePath;
+		static Server* instance;
 
 		void setNonBlocking(int fd);
 		void setupSignalHandlers();
@@ -49,6 +51,7 @@ class Server
 		static void signalHandler(int signum); // does it need to be static ?
 		void handleNewConnection();
 		void handleClient(int clientFD);
+		static Server* getInstance(); // is it the only solution?
 		~Server();
 		void run();
 

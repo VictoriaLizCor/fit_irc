@@ -15,8 +15,11 @@
 #include <csignal>
 #include <fstream>
 
+Server* Server::instance = NULL;
+
 Server::Server(int& port, const std::string& password) : password(password)
 {
+	instance = this;
 	try
 	{
 		serverFD = socket(AF_INET, SOCK_STREAM, 0);
@@ -36,7 +39,9 @@ Server::Server(int& port, const std::string& password) : password(password)
 		 * 
 		 */
 		int opt = 1;
-		if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0)
+		// | SO_REUSEPORT
+		//if (bind(listeningSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {
+		if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
 		{
 			throw std::runtime_error("setsockopt(SO_REUSEADDR) failed");
 		}
@@ -149,7 +154,14 @@ void Server::handleClient(int clientFD)
 			std::map<int, Client*>::iterator it = clients.find(clientFD);
 			if (it != clients.end())
 			{
-				it->second->handleRead();
+				try {
+					it->second->handleRead();
+				} catch (const std::runtime_error& e)
+				{
+					std::cerr << "Client " << clientFD << " error: " << e.what() << std::endl;
+					pthread_mutex_unlock(&clientsMutex);
+					throw; // Re-throw to handle cleanup outside the loop
+				}
 			}
 			pthread_mutex_unlock(&clientsMutex);
 		}
@@ -199,7 +211,28 @@ void Server::setupSignalHandlers()
 void Server::signalHandler(int signum)
 {
 	std::cout << "Interrupt signal (" << signum << ") received. Closing server socket." << std::endl;
+
+	// Access the server instance
+	Server* server = Server::getInstance();
+
+	// Send a message to each client
+	pthread_mutex_lock(&server->clientsMutex);
+	for (ClientsIte it = server->clients.begin(); it != server->clients.end(); ++it)
+	{
+		it->second->sendMessage("Server is shutting down.\n");
+	}
+	pthread_mutex_unlock(&server->clientsMutex);
+
+	// Close the server socket
+	close(server->serverFD);
+
+	// Exit the program
 	exit(signum);
+}
+
+Server* Server::getInstance()
+{
+	return instance;
 }
 
 void Server::createLockFile()
