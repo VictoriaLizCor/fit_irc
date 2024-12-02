@@ -34,10 +34,8 @@ CXX			= g++
 DEBUG_DIR	:= $(NAME).dSYM
 OBJS := $(addprefix $(BUILD_DIR), $(notdir $(SRC:%.cpp=%.o)))
 #------ CODE FOR OBJECT FILES ------#
-# The `vpath` directive in a Makefile is used to specify a list of
-# directories that `make` should search when it's looking for
-# prerequisites. 
-vpath %.cpp $(sort $(dir $(SRC)))
+
+vpath %.cpp $(sort $(dir $(SRC))) #  list of directories that `make` should search when it's looking for prerequisites. 
 DEPS		:= $(OBJS:.o=.d)
 -include $(DEPS) # to include in compilation
 D_FLAGS		+= -O0 -g3 #-Og optimization + good debuggin experience
@@ -53,7 +51,6 @@ D_FLAGS		+= -fno-omit-frame-pointer
 
 else
 OBJS		:= $(SRC)
-# D_FLAGS		+= -Werror 
 endif
 # MAKEFLAGS	+= -j4 #--debug #// -j for multinodes
 ifeq ($(S), 1)
@@ -122,6 +119,7 @@ re: fclean all
 
 # Memmory leaks
 # ATTENTION !!!!!!!!!!!!!!  USE WITH S=0 !
+## do not use yet as it does not handle 
 val: $(NAME)
 	@echo $(RED) $(VALGRIND) ./$(NAME) $(shell echo $(num)) $(E_NC) "\n"
 	@$(VALGRIND) ./$(NAME) $(shell echo "$(num)"); echo
@@ -167,7 +165,7 @@ client: $(NAME)
 		fi; \
 	fi
 
-# #-------------------- GIT UTILS ----------------------------#
+# #-------------------- UTILS ----------------------------#
 info:
 	@echo GIT_REPO:  $(CYAN) $(GIT_REPO) $(E_NC)
 	@echo PROJECT_ROOT: $(CYAN) $(PROJECT_ROOT) $(E_NC)
@@ -181,21 +179,7 @@ info:
 	@echo $(BLUE)"V = $(V)" $(E_NC)
 	@echo $(BLUE)"DEPENDENCIES =" $(DEPENDENCIES) $(E_NC)
 
-quick: cleanAll
-	@echo $(GREEN) && git commit -am "* Update in files: "; \
-	ret=$$? ; \
-	if [ $$ret -ne 0 ]; then \
-		exit 1; \
-	else \
-		$(MAKE) -C . gPush; \
-	fi
-soft:
-	@if [ -f "$(GIT_REPO)/Makefile" ]; then	\
-		$(MAKE) -C $(GIT_REPO) soft || \
-		if [ $$? -ne 0 ]; then \
-			echo $(RED) GIT_REPO not found $(E_NC); \
-		fi \
-	fi
+
 cpp: # Usage: make cpp h=filename
 	@if [ ! -d "include" ]; then \
 		mkdir include; \
