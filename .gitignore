@@ -56,7 +56,7 @@ dkms.conf
 obj*/
 #.vscode*/
 .settings
-
+ircserv
 *.DS_Store
 
 
